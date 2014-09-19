@@ -1,0 +1,29 @@
+{
+  "name": "good-http",
+  "version": "1.0.0",
+  "repository": "git://github.com/hapijs/good-http",
+  "description": "Http(s) broadcasting for Good process monitor",
+  "main": "index.js",
+  "scripts": {
+    "test": "make test-cov"
+  },
+  "dependencies": {
+    "good-reporter": "^1.x.x",
+    "hoek": "^2.4.1",
+    "wreck": "^5.0.1"
+  },
+  "devDependencies": {
+    "async": "^0.9.0",
+    "hapi": "^6.8.1",
+    "lab": "^4.3.0"
+  },
+  "engines": {
+    "node": ">=0.10.x"
+  },
+  "licenses": [
+    {
+      "type": "BSD",
+      "url": "http://github.com/hapijs/good-http/raw/master/LICENSE"
+    }
+  ]
+}
