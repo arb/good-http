@@ -8,7 +8,7 @@
     "test": "make test-cov"
   },
   "dependencies": {
-    "good-reporter": "^1.x.x",
+    "good-reporter": "^1.0.0",
     "hoek": "^2.4.1",
     "wreck": "^5.0.1"
   },
