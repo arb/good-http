@@ -102,10 +102,11 @@ describe('good-http', function() {
                     threshold: 5,
                     events: {
                         log: '*'
-                    }
-                }, {
-                    headers: {
-                        'x-api-key': 12345
+                    },
+                    wreck: {
+                        headers: {
+                            'x-api-key': 12345
+                        }
                     }
                 });
 
@@ -204,10 +205,11 @@ describe('good-http', function() {
                     events: {
                         log: '*',
                         request: '*'
-                    }
-                }, {
-                    headers: {
-                        'x-api-key': 12345
+                    },
+                    wreck: {
+                        headers: {
+                            'x-api-key': 12345
+                        }
                     }
                 });
 
@@ -300,10 +302,11 @@ describe('good-http', function() {
                     threshold: 3,
                     events: {
                         log: '*'
-                    }
-                }, {
-                    headers: {
-                        'x-api-key': 12345
+                    },
+                    wreck: {
+                        headers: {
+                            'x-api-key': 12345
+                        }
                     }
                 });
 
