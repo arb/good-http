@@ -59,7 +59,8 @@ describe('good-http', function() {
     it('throws an error if missing endpoint', function (done) {
 
         expect(function () {
-            var reporter = new GoodHttp(null, {});
+
+            var reporter = new GoodHttp(null);
         }).to.throw('endpoint must be a string');
 
         done();
@@ -99,11 +100,12 @@ describe('good-http', function() {
 
                 var reporter = new GoodHttp(server.info.uri, {
                     threshold: 5,
-                    headers: {
-                        'x-api-key': 12345
-                    },
                     events: {
                         log: '*'
+                    }
+                }, {
+                    headers: {
+                        'x-api-key': 12345
                     }
                 });
 
@@ -179,15 +181,11 @@ describe('good-http', function() {
                 expect(request.headers['x-api-key']).to.equal('12345');
                 expect(payload.schema).to.equal('good-http');
 
-                payload = request.payload;
-                events = payload.events;
-
                 expect(events.log).to.exist;
                 expect(events.log.length).to.equal(2);
 
                 expect(events.request).to.exist;
                 expect(events.request.length).to.equal(3);
-
 
                 expect(internals.isSorted(events.log)).to.equal(true);
                 expect(internals.isSorted(events.request)).to.equal(true);
@@ -203,12 +201,13 @@ describe('good-http', function() {
 
                 var reporter = new GoodHttp(server.info.uri, {
                     threshold: 5,
-                    headers: {
-                        'x-api-key': 12345
-                    },
                     events: {
                         log: '*',
                         request: '*'
+                    }
+                }, {
+                    headers: {
+                        'x-api-key': 12345
                     }
                 });
 
@@ -237,35 +236,38 @@ describe('good-http', function() {
             var server = internals.makeServer(function (request, reply) {
 
                 hitCount++;
-                var payload = request.payload;
+                var events = request.payload.events;
 
-                expect(payload.events).to.exist;
-                expect(payload.events.log).to.exist;
-                expect(payload.events.log.length).to.equal(1);
-                expect(payload.events.log[0].id).to.equal(hitCount - 1);
+                expect(events).to.exist;
+                expect(events.log).to.exist;
+                expect(events.log.length).to.equal(5);
+                expect(events.log[0]._data).to.equal('[Circular ~.events.log.0]');
 
-                reply();
-                if (hitCount === 10) {
-                    done();
-                }
+
+                expect(hitCount).to.equal(1);
+                done();
             });
 
             server.start(function () {
 
                 var reporter = new GoodHttp(server.info.uri, {
-                    threshold: 0,
+                    threshold: 5,
                     events: {
                         log: '*'
                     }
                 });
 
-                Async.eachSeries([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], function (item, next) {
+                Async.eachSeries([0, 1, 2, 3, 4], function (item, next) {
 
-                    reporter.queue('log', {
+                    var data = {
                         event: 'log',
                         timestamp: Date.now(),
                         id: item
-                    });
+                    };
+
+                    data._data = data;
+
+                    reporter.queue('log', data);
                     reporter.report(function (error) {
 
                         expect(error).to.not.exist;
@@ -286,9 +288,6 @@ describe('good-http', function() {
                 var payload = request.payload;
                 var events = payload.events;
 
-                payload = request.payload;
-                events = payload.events;
-
                 expect(events.log).to.exist;
                 expect(events.log.length).to.equal(2);
 
@@ -299,11 +298,12 @@ describe('good-http', function() {
 
                 var reporter = new GoodHttp(server.info.uri, {
                     threshold: 3,
-                    headers: {
-                        'x-api-key': 12345
-                    },
                     events: {
                         log: '*'
+                    }
+                }, {
+                    headers: {
+                        'x-api-key': 12345
                     }
                 });
 
