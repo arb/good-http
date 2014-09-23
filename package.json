@@ -1,6 +1,6 @@
 {
   "name": "good-http",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": "git://github.com/hapijs/good-http",
   "description": "Http(s) broadcasting for Good process monitor",
   "main": "index.js",
