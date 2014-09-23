@@ -10,6 +10,7 @@
   "dependencies": {
     "good-reporter": "^1.0.0",
     "hoek": "^2.4.1",
+    "json-stringify-safe": "^5.0.0",
     "wreck": "^5.0.1"
   },
   "devDependencies": {

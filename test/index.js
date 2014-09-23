@@ -31,7 +31,7 @@ internals.makeServer = function (handler) {
 
     server.route({
         method: 'POST',
-        path: '/logs',
+        path: '/',
         handler: handler
     });
 
@@ -42,19 +42,15 @@ internals.makeServer = function (handler) {
 
 var describe = lab.describe;
 var it = lab.it;
-var before = lab.before;
-var after = lab.after;
 var expect = Lab.expect;
 
-describe('GoodHttp', function() {
+describe('good-http', function() {
 
     it('throws an error without using new', function(done) {
 
         expect(function () {
 
-            var reporter = GoodHttp({
-                endpoint: 'www.github.com'
-            });
+            var reporter = GoodHttp('www.github.com');
         }).to.throw('GoodHttp must be created with new');
 
         done();
@@ -63,13 +59,13 @@ describe('GoodHttp', function() {
     it('throws an error if missing endpoint', function (done) {
 
         expect(function () {
-            var reporter = new GoodHttp({});
-        }).to.throw('endpoint must be specified');
+            var reporter = new GoodHttp(null, {});
+        }).to.throw('endpoint must be a string');
 
         done();
     });
 
-    describe('#report', function () {
+    describe('report()', function () {
 
         it('honors the threshold setting and sends the events in a batch', function (done) {
 
@@ -101,14 +97,13 @@ describe('GoodHttp', function() {
 
             server.start(function () {
 
-                var reporter = new GoodHttp({
-                    endpoint: server.info.uri + '/logs',
+                var reporter = new GoodHttp(server.info.uri, {
                     threshold: 5,
                     headers: {
                         'x-api-key': 12345
                     },
                     events: {
-                        log: []
+                        log: '*'
                     }
                 });
 
@@ -149,11 +144,10 @@ describe('GoodHttp', function() {
 
             server.start(function () {
 
-                var reporter = new GoodHttp({
-                    endpoint: server.info.uri + '/logs',
+                var reporter = new GoodHttp(server.info.uri, {
                     threshold: 0,
                     events: {
-                        log: []
+                        log: '*'
                     }
                 });
 
@@ -171,7 +165,6 @@ describe('GoodHttp', function() {
                     });
                 });
             });
-
         });
 
         it('sends the events in an envelop grouped by type and ordered by timestamp', function(done) {
@@ -208,15 +201,14 @@ describe('GoodHttp', function() {
 
             server.start(function () {
 
-                var reporter = new GoodHttp({
-                    endpoint: server.info.uri + '/logs',
+                var reporter = new GoodHttp(server.info.uri, {
                     threshold: 5,
                     headers: {
                         'x-api-key': 12345
                     },
                     events: {
-                        log: [],
-                        request: []
+                        log: '*',
+                        request: '*'
                     }
                 });
 
@@ -238,8 +230,52 @@ describe('GoodHttp', function() {
                 });
             });
         });
+
+        it('handles circular object references correctly', function (done) {
+
+            var hitCount = 0;
+            var server = internals.makeServer(function (request, reply) {
+
+                hitCount++;
+                var payload = request.payload;
+
+                expect(payload.events).to.exist;
+                expect(payload.events.log).to.exist;
+                expect(payload.events.log.length).to.equal(1);
+                expect(payload.events.log[0].id).to.equal(hitCount - 1);
+
+                reply();
+                if (hitCount === 10) {
+                    done();
+                }
+            });
+
+            server.start(function () {
+
+                var reporter = new GoodHttp(server.info.uri, {
+                    threshold: 0,
+                    events: {
+                        log: '*'
+                    }
+                });
+
+                Async.eachSeries([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], function (item, next) {
+
+                    reporter.queue('log', {
+                        event: 'log',
+                        timestamp: Date.now(),
+                        id: item
+                    });
+                    reporter.report(function (error) {
+
+                        expect(error).to.not.exist;
+                        next();
+                    });
+                });
+            });
+        });
     });
-    describe('#stop', function () {
+    describe('stop()', function () {
 
         it('makes a last attempt to send any remaining log entries', function (done) {
 
@@ -261,14 +297,13 @@ describe('GoodHttp', function() {
 
             server.start(function () {
 
-                var reporter = new GoodHttp({
-                    endpoint: server.info.uri + '/logs',
+                var reporter = new GoodHttp(server.info.uri, {
                     threshold: 3,
                     headers: {
                         'x-api-key': 12345
                     },
                     events: {
-                        log: []
+                        log: '*'
                     }
                 });
 
