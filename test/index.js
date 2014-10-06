@@ -5,7 +5,6 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var GoodHttp = require('..');
 var Hapi = require('hapi');
-var Async = require('async');
 
 // Declare internals
 
@@ -67,7 +66,21 @@ it('throws an error if missing endpoint', function (done) {
     done();
 });
 
-describe('report()', function () {
+it('does not report if the event que is empty', function (done) {
+
+    var reporter = new GoodHttp('http://localhost:31337', {
+        threshold: 5,
+        events: {
+            log: '*'
+        }
+    });
+
+    var result = reporter._sendMessages();
+    expect(result).to.not.exist;
+    done();
+});
+
+describe('_report()', function () {
 
     it('honors the threshold setting and sends the events in a batch', function (done) {
 
