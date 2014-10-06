@@ -1,5 +1,6 @@
 // Load modules
 
+var EventEmitter = require('events').EventEmitter;
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var GoodHttp = require('..');
@@ -71,6 +72,7 @@ describe('good-http', function() {
         it('honors the threshold setting and sends the events in a batch', function (done) {
 
             var hitCount = 0;
+            var ee = new EventEmitter();
             var server = internals.makeServer(function (request, reply) {
 
                 hitCount++;
@@ -110,18 +112,17 @@ describe('good-http', function() {
                     }
                 });
 
-                Async.eachSeries([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], function (item, next) {
+                reporter.start(ee, function (err) {
 
-                    reporter.queue('log', {
-                        event: 'log',
-                        timestamp: Date.now(),
-                        id: item
-                    });
-                    reporter.report(function (error) {
+                    expect(err).to.not.exist;
 
-                        expect(error).to.not.exist;
-                        next();
-                    });
+                    for (var i = 0; i < 10; ++i) {
+                       ee.emit('report', 'log', {
+                           id: i,
+                           value: 'this is data for item ' + 1,
+                           event: 'log'
+                       });
+                    }
                 });
             });
         });
@@ -129,6 +130,7 @@ describe('good-http', function() {
         it('sends each event individually if threshold is 0', function (done) {
 
             var hitCount = 0;
+            var ee = new EventEmitter();
             var server = internals.makeServer(function (request, reply) {
 
                 hitCount++;
@@ -154,18 +156,17 @@ describe('good-http', function() {
                     }
                 });
 
-                Async.eachSeries([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], function (item, next) {
+                reporter.start(ee, function (err) {
 
-                    reporter.queue('log', {
-                        event: 'log',
-                        timestamp: Date.now(),
-                        id: item
-                    });
-                    reporter.report(function (error) {
+                    expect(err).to.not.exist;
 
-                        expect(error).to.not.exist;
-                        next();
-                    });
+                    for (var i = 0; i < 10; ++i) {
+                        ee.emit('report', 'log', {
+                            id: i,
+                            value: 'this is data for item ' + 1,
+                            event: 'log'
+                        });
+                    }
                 });
             });
         });
@@ -173,6 +174,7 @@ describe('good-http', function() {
         it('sends the events in an envelop grouped by type and ordered by timestamp', function(done) {
 
             var hitCount = 0;
+            var ee = new EventEmitter();
             var server = internals.makeServer(function (request, reply) {
 
                 hitCount++;
@@ -183,17 +185,18 @@ describe('good-http', function() {
                 expect(payload.schema).to.equal('good-http');
 
                 expect(events.log).to.exist;
-                expect(events.log.length).to.equal(2);
-
                 expect(events.request).to.exist;
-                expect(events.request.length).to.equal(3);
 
                 expect(internals.isSorted(events.log)).to.equal(true);
                 expect(internals.isSorted(events.request)).to.equal(true);
 
-                reply();
-
-                if (hitCount === 2) {
+                if (hitCount === 1) {
+                    expect(events.log.length).to.equal(3);
+                    expect(events.request.length).to.equal(2);
+                }
+                else if (hitCount === 2) {
+                    expect(events.log.length).to.equal(2);
+                    expect(events.request.length).to.equal(3);
                     done();
                 }
             });
@@ -213,21 +216,21 @@ describe('good-http', function() {
                     }
                 });
 
-                Async.eachSeries([1, 3, 5, 2, 4, 7, 9, 11, 6, 8], function (item, next) {
+                reporter.start(ee, function (err) {
 
-                    var eventType = item % 2 === 0 ? 'log' : 'request';
+                    expect(err).to.not.exist;
 
-                    reporter.queue(eventType, {
-                        event: eventType,
-                        // Create a random timestamp to put them out of order
-                        timestamp: Math.floor(Date.now() + (Math.random() * 10000000000)),
-                        id: item
-                    });
-                    reporter.report(function (error) {
+                    for (var i = 0; i < 10; ++i) {
 
-                        expect(error).to.not.exist;
-                        next();
-                    });
+                        var eventType = i % 2 === 0 ? 'log' : 'request';
+
+                        ee.emit('report', eventType, {
+                            id: i,
+                            value: 'this is data for item ' + 1,
+                            timestamp: Math.floor(Date.now() + (Math.random() * 10000000000)),
+                            event: eventType
+                        });
+                    }
                 });
             });
         });
@@ -235,6 +238,7 @@ describe('good-http', function() {
         it('handles circular object references correctly', function (done) {
 
             var hitCount = 0;
+            var ee = new EventEmitter();
             var server = internals.makeServer(function (request, reply) {
 
                 hitCount++;
@@ -259,22 +263,22 @@ describe('good-http', function() {
                     }
                 });
 
-                Async.eachSeries([0, 1, 2, 3, 4], function (item, next) {
+                reporter.start(ee, function (err) {
 
-                    var data = {
-                        event: 'log',
-                        timestamp: Date.now(),
-                        id: item
-                    };
+                    expect(err).to.not.exist;
 
-                    data._data = data;
+                    for (var i = 0; i < 5; ++i) {
 
-                    reporter.queue('log', data);
-                    reporter.report(function (error) {
+                        var data = {
+                            event: 'log',
+                            timestamp: Date.now(),
+                            id: i
+                        };
 
-                        expect(error).to.not.exist;
-                        next();
-                    });
+                        data._data = data;
+
+                        ee.emit('report', 'log', data);
+                    }
                 });
             });
         });
@@ -284,6 +288,7 @@ describe('good-http', function() {
         it('makes a last attempt to send any remaining log entries', function (done) {
 
             var hitCount = 0;
+            var ee = new EventEmitter();
             var server = internals.makeServer(function (request, reply) {
 
                 hitCount++;
@@ -294,6 +299,7 @@ describe('good-http', function() {
                 expect(events.log.length).to.equal(2);
 
                 reply();
+                done();
             });
 
             server.start(function () {
@@ -310,29 +316,23 @@ describe('good-http', function() {
                     }
                 });
 
-                reporter.queue('log', {
-                    event: 'log',
-                    timestamp: Date.now(),
-                    id: 1
-                });
-                reporter.queue('log', {
-                    event: 'log',
-                    timestamp: Date.now(),
-                    id: 2
-                });
+                reporter.start(ee, function (err) {
 
-                reporter.report(function (error) {
+                    expect(err).to.not.exist;
 
-                    expect(error).to.not.exist;
-
-                    reporter.stop(function (err) {
-
-                        expect(err).to.not.exist;
-                        expect(hitCount).to.equal(1);
-
-                        done();
+                    ee.emit('report', 'log', {
+                        event: 'log',
+                        timestamp: Date.now(),
+                        id: 1
+                    });
+                    ee.emit('report', 'log', {
+                        event: 'log',
+                        timestamp: Date.now(),
+                        id: 2
                     });
                 });
+
+                reporter.stop();
             });
         });
     });
