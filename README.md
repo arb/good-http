@@ -26,3 +26,45 @@ creates a new GoodFile object with the following arguments
 `good-file` implements the [good-reporter](https://github.com/hapijs/good-reporter) interface as has no additional public methods.
 
 - `stop(callback)` - `GoodHttp` will make a final attempt to transmit anything remaining in it's internal event queue when `stop` is called.
+
+### Schema
+Each POST will match the following schema. Every event will be wrapped inside the `events` key and grouped by the event type and ordered by the timestamp. The payload that is POSTed to the `endpoint` has the following schema:
+
+```json
+{
+  "host":"servername.home",
+  "schema":"good-http",
+  "timeStamp":1412710565121,
+  "events":{
+    "request":[
+      {
+        "event":"request",
+        "timestamp":1413464014739,
+        ...
+      },
+      {
+        "event":"request",
+        "timestamp":1414221317758,
+        ...
+      },
+      {
+        "event":"request",
+        "timestamp":1415088216608,
+        ...
+      }
+    ],
+    "log":[
+      {
+        "event":"log",
+        "timestamp":1415180913160,
+        ...
+      },
+      {
+        "event":"log",
+        "timestamp":1422493874390,
+        ...
+      }
+    ]
+  }
+}
+```
