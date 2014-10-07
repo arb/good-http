@@ -25,4 +25,4 @@ creates a new GoodFile object with the following arguments
 ### GoodHttp Methods
 `good-file` implements the [good-reporter](https://github.com/hapijs/good-reporter) interface as has no additional public methods.
 
-- `stop(callback)` - `GoodHttp` will make a final attempt to transmit anything remaining in it's internal event queue when `stop` is called.
+- `stop()` - `GoodHttp` will make a final attempt to transmit anything remaining in it's internal event queue when `stop` is called.
