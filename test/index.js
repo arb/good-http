@@ -68,12 +68,7 @@ it('throws an error if missing endpoint', function (done) {
 
 it('does not report if the event que is empty', function (done) {
 
-    var reporter = new GoodHttp('http://localhost:31337', {
-        threshold: 5,
-        events: {
-            log: '*'
-        }
-    });
+    var reporter = new GoodHttp('http://localhost:31337', { log: '*'}, { threshold: 5 });
 
     var result = reporter._sendMessages();
     expect(result).to.not.exist;
@@ -113,11 +108,8 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, {
+            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
                 threshold: 5,
-                events: {
-                    log: '*'
-                },
                 wreck: {
                     headers: {
                         'x-api-key': 12345
@@ -162,11 +154,8 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, {
+            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
                 threshold: 0,
-                events: {
-                    log: '*'
-                }
             });
 
             reporter.start(ee, function (err) {
@@ -217,11 +206,10 @@ describe('_report()', function () {
         server.start(function () {
 
             var reporter = new GoodHttp(server.info.uri, {
+                log: '*',
+                request: '*'
+            }, {
                 threshold: 5,
-                events: {
-                    log: '*',
-                    request: '*'
-                },
                 wreck: {
                     headers: {
                         'x-api-key': 12345
@@ -269,11 +257,8 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, {
-                threshold: 5,
-                events: {
-                    log: '*'
-                }
+            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+                threshold: 5
             });
 
             reporter.start(ee, function (err) {
@@ -318,11 +303,8 @@ describe('stop()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, {
+            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
                 threshold: 3,
-                events: {
-                    log: '*'
-                },
                 wreck: {
                     headers: {
                         'x-api-key': 12345
