@@ -1,5 +1,6 @@
 // Load modules
 
+var Code = require('code');
 var EventEmitter = require('events').EventEmitter;
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
@@ -42,7 +43,7 @@ internals.makeServer = function (handler) {
 
 var describe = lab.describe;
 var it = lab.it;
-var expect = Lab.expect;
+var expect = Code.expect;
 
 
 
@@ -71,7 +72,7 @@ it('does not report if the event que is empty', function (done) {
     var reporter = new GoodHttp('http://localhost:31337', { log: '*'}, { threshold: 5 });
 
     var result = reporter._sendMessages();
-    expect(result).to.not.exist;
+    expect(result).to.not.exist();
     done();
 });
 
@@ -119,7 +120,7 @@ describe('_report()', function () {
 
             reporter.start(ee, function (err) {
 
-                expect(err).to.not.exist;
+                expect(err).to.not.exist();
 
                 for (var i = 0; i < 10; ++i) {
                    ee.emit('report', 'log', {
@@ -141,8 +142,8 @@ describe('_report()', function () {
             hitCount++;
             var payload = request.payload;
 
-            expect(payload.events).to.exist;
-            expect(payload.events.log).to.exist;
+            expect(payload.events).to.exist();
+            expect(payload.events.log).to.exist();
             expect(payload.events.log.length).to.equal(1);
             expect(payload.events.log[0].id).to.equal(hitCount - 1);
 
@@ -160,7 +161,7 @@ describe('_report()', function () {
 
             reporter.start(ee, function (err) {
 
-                expect(err).to.not.exist;
+                expect(err).to.not.exist();
 
                 for (var i = 0; i < 10; ++i) {
                     ee.emit('report', 'log', {
@@ -186,8 +187,8 @@ describe('_report()', function () {
             expect(request.headers['x-api-key']).to.equal('12345');
             expect(payload.schema).to.equal('good-http');
 
-            expect(events.log).to.exist;
-            expect(events.request).to.exist;
+            expect(events.log).to.exist();
+            expect(events.request).to.exist();
 
             expect(internals.isSorted(events.log)).to.equal(true);
             expect(internals.isSorted(events.request)).to.equal(true);
@@ -219,7 +220,7 @@ describe('_report()', function () {
 
             reporter.start(ee, function (err) {
 
-                expect(err).to.not.exist;
+                expect(err).to.not.exist();
 
                 for (var i = 0; i < 10; ++i) {
 
@@ -245,8 +246,8 @@ describe('_report()', function () {
             hitCount++;
             var events = request.payload.events;
 
-            expect(events).to.exist;
-            expect(events.log).to.exist;
+            expect(events).to.exist();
+            expect(events.log).to.exist();
             expect(events.log.length).to.equal(5);
             expect(events.log[0]._data).to.equal('[Circular ~.events.log.0]');
 
@@ -263,7 +264,7 @@ describe('_report()', function () {
 
             reporter.start(ee, function (err) {
 
-                expect(err).to.not.exist;
+                expect(err).to.not.exist();
 
                 for (var i = 0; i < 5; ++i) {
 
@@ -294,7 +295,7 @@ describe('stop()', function () {
             var payload = request.payload;
             var events = payload.events;
 
-            expect(events.log).to.exist;
+            expect(events.log).to.exist();
             expect(events.log.length).to.equal(2);
 
             reply();
@@ -314,7 +315,7 @@ describe('stop()', function () {
 
             reporter.start(ee, function (err) {
 
-                expect(err).to.not.exist;
+                expect(err).to.not.exist();
 
                 ee.emit('report', 'log', {
                     event: 'log',
