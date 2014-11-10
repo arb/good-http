@@ -23,7 +23,7 @@ creates a new GoodFile object with the following arguments
     - `[wreck]` - configuration object to pass into [`wreck`](https://github.com/hapijs/wreck#advanced). Defaults to `{ timeout: 60000, headers: {} }`. `content-type` is always "application/json".
 
 ### GoodHttp Methods
-`good-file` implements the [good-reporter](https://github.com/hapijs/good-reporter) interface as has no additional public methods.
+`good-http` implements the [good-reporter](https://github.com/hapijs/good-reporter) interface as has no additional public methods.
 
 - `stop()` - `GoodHttp` will make a final attempt to transmit anything remaining in it's internal event queue when `stop` is called.
 
