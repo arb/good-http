@@ -13,7 +13,7 @@ Lead Maintainer: [Adam Bretz](https://github.com/arb)
 ## Good Http
 ### new GoodHttp (endpoint, events, [options])
 
-creates a new GoodFile object with the following arguments
+creates a new GoodHttp object with the following arguments
 - `endpoint` - full path to remote server to transmit logs.
 - `events` - an object of key value pairs.
   - `key` - one of the supported [good events](https://github.com/hapijs/good) indicating the hapi event to subscribe to
