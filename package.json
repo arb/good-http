@@ -1,6 +1,6 @@
 {
   "name": "good-http",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "repository": "git://github.com/hapijs/good-http",
   "description": "Http(s) broadcasting for Good process monitor",
   "main": "index.js",
@@ -15,7 +15,8 @@
   },
   "devDependencies": {
     "hapi": "6.x.x",
-    "lab": "4.x.x"
+    "code": "1.x.x",
+    "lab": "5.x.x"
   },
   "engines": {
     "node": ">=0.10.x"
