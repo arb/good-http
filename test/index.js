@@ -67,6 +67,14 @@ it('throws an error if missing endpoint', function (done) {
     done();
 });
 
+it('does not throw an error with missing options', function (done) {
+
+    var reporter = new GoodHttp('www.github.com');
+    expect(reporter).to.exist();
+
+    done();
+});
+
 it('does not report if the event que is empty', function (done) {
 
     var reporter = new GoodHttp('http://localhost:31337', { log: '*'}, { threshold: 5 });
