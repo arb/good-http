@@ -16,9 +16,9 @@ internals.isSorted = function (elements) {
     var i = 0;
     var il = elements.length;
 
-    while (i < il && elements[i+1]) {
+    while (i < il && elements[i + 1]) {
 
-        if (elements[i].timestamp > elements[i+1].timestamp) {
+        if (elements[i].timestamp > elements[i + 1].timestamp) {
             return false;
         }
         ++i;
@@ -164,7 +164,7 @@ describe('_report()', function () {
         server.start(function () {
 
             var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
-                threshold: 0,
+                threshold: 0
             });
 
             reporter.start(ee, function (err) {
