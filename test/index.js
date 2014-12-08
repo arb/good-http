@@ -51,7 +51,7 @@ it('throws an error without using new', function(done) {
 
     expect(function () {
 
-        var reporter = GoodHttp('www.github.com');
+        var reporter = GoodHttp(null, 'www.github.com');
     }).to.throw('GoodHttp must be created with new');
 
     done();
@@ -69,7 +69,7 @@ it('throws an error if missing endpoint', function (done) {
 
 it('does not throw an error with missing options', function (done) {
 
-    var reporter = new GoodHttp('www.github.com');
+    var reporter = new GoodHttp(null, 'www.github.com');
     expect(reporter).to.exist();
 
     done();
@@ -77,7 +77,7 @@ it('does not throw an error with missing options', function (done) {
 
 it('does not report if the event que is empty', function (done) {
 
-    var reporter = new GoodHttp('http://localhost:31337', { log: '*'}, { threshold: 5 });
+    var reporter = new GoodHttp({ log: '*'}, 'http://localhost:31337', { threshold: 5 });
 
     var result = reporter._sendMessages();
     expect(result).to.not.exist();
@@ -117,7 +117,7 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({ log: '*' }, server.info.uri, {
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -163,7 +163,7 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({ log: '*' }, server.info.uri, {
                 threshold: 0
             });
 
@@ -214,10 +214,10 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, {
+            var reporter = new GoodHttp({
                 log: '*',
                 request: '*'
-            }, {
+            }, server.info.uri, {
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -266,7 +266,7 @@ describe('_report()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({ log: '*' }, server.info.uri, {
                 threshold: 5
             });
 
@@ -312,7 +312,7 @@ describe('stop()', function () {
 
         server.start(function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({ log: '*' }, server.info.uri, {
                 threshold: 3,
                 wreck: {
                     headers: {
