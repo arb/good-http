@@ -27,6 +27,7 @@ internals.isSorted = function (elements) {
 };
 
 internals.getUri = function (server) {
+
     var address = server.address();
 
     return 'http://' + address.address + ':' + address.port;
@@ -106,8 +107,7 @@ describe('_report()', function () {
                     expect(events[4].event).to.equal('log');
                     res.end();
                 }
-
-                if (hitCount === 2) {
+                else if (hitCount === 2) {
                     expect(events[4].id).to.equal(9);
                     expect(events[4].event).to.equal('log');
 
@@ -198,6 +198,7 @@ describe('_report()', function () {
         var hitCount = 0;
         var ee = new EventEmitter();
         var server = Http.createServer(function (req, res) {
+
             hitCount++;
             var data = '';
 
@@ -277,6 +278,7 @@ describe('_report()', function () {
             hitCount++;
 
             req.on('data', function (chunk) {
+
                 data += chunk;
             });
             req.on('end', function () {
@@ -336,6 +338,7 @@ describe('stop()', function () {
             hitCount++;
 
             req.on('data', function (chunk) {
+
                 data += chunk;
             });
             req.on('end', function () {
