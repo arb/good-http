@@ -11,7 +11,7 @@ Lead Maintainer: [Adam Bretz](https://github.com/arb)
 `good-http` is a [good-reporter](https://github.com/hapijs/good-reporter) implementation to write [hapi](http://hapijs.com/) server events to remote endpoints. It makes a "POST" request with a JSON payload to the supplied `endpoint`.
 
 ## Good Http
-### new GoodHttp (endpoint, events, [options])
+### new GoodHttp (events, endpoint, [options])
 
 creates a new GoodHttp object with the following arguments
 - `endpoint` - full path to remote server to transmit logs.

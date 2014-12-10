@@ -1,11 +1,11 @@
 // Load modules
 
-var Code = require('code');
 var EventEmitter = require('events').EventEmitter;
+var Http = require('http');
+var Code = require('code');
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var GoodHttp = require('..');
-var Hapi = require('hapi');
 
 // Declare internals
 
@@ -26,17 +26,11 @@ internals.isSorted = function (elements) {
     return true;
 };
 
-internals.makeServer = function (handler) {
+internals.getUri = function (server) {
 
-    var server = new Hapi.Server('127.0.0.1', 0);
+    var address = server.address();
 
-    server.route({
-        method: 'POST',
-        path: '/',
-        handler: handler
-    });
-
-    return server;
+    return 'http://' + address.address + ':' + address.port;
 };
 
 // Test shortcuts
@@ -51,7 +45,7 @@ it('throws an error without using new', function(done) {
 
     expect(function () {
 
-        var reporter = GoodHttp('www.github.com');
+        var reporter = GoodHttp(null, 'www.github.com');
     }).to.throw('GoodHttp must be created with new');
 
     done();
@@ -69,7 +63,7 @@ it('throws an error if missing endpoint', function (done) {
 
 it('does not throw an error with missing options', function (done) {
 
-    var reporter = new GoodHttp('www.github.com');
+    var reporter = new GoodHttp(null, 'www.github.com');
     expect(reporter).to.exist();
 
     done();
@@ -77,7 +71,7 @@ it('does not throw an error with missing options', function (done) {
 
 it('does not report if the event que is empty', function (done) {
 
-    var reporter = new GoodHttp('http://localhost:31337', { log: '*'}, { threshold: 5 });
+    var reporter = new GoodHttp({ log: '*'}, 'http://localhost:31337', { threshold: 5 });
 
     var result = reporter._sendMessages();
     expect(result).to.not.exist();
@@ -90,34 +84,42 @@ describe('_report()', function () {
 
         var hitCount = 0;
         var ee = new EventEmitter();
-        var server = internals.makeServer(function (request, reply) {
+        var server = Http.createServer(function (req, res) {
 
+            var data = '';
             hitCount++;
-            var payload = request.payload;
-            var events = payload.events.log;
 
-            expect(request.headers['x-api-key']).to.equal('12345');
-            expect(payload.schema).to.equal('good-http');
-            expect(events.length).to.equal(5);
+            req.on('data', function (chunk) {
 
-            if (hitCount === 1) {
-                expect(events[4].id).to.equal(4);
-                expect(events[4].event).to.equal('log');
-                reply();
-            }
+                data += chunk;
+            });
+            req.on('end', function () {
 
-            if (hitCount === 2) {
-                expect(events[4].id).to.equal(9);
-                expect(events[4].event).to.equal('log');
+                var payload = JSON.parse(data);
+                var events = payload.events.log;
 
-                reply();
-                done();
-            }
+                expect(req.headers['x-api-key']).to.equal('12345');
+                expect(payload.schema).to.equal('good-http');
+                expect(events.length).to.equal(5);
+
+                if (hitCount === 1) {
+                    expect(events[4].id).to.equal(4);
+                    expect(events[4].event).to.equal('log');
+                    res.end();
+                }
+                else if (hitCount === 2) {
+                    expect(events[4].id).to.equal(9);
+                    expect(events[4].event).to.equal('log');
+
+                    res.end();
+                    server.close(done);
+                }
+            });
         });
 
-        server.start(function () {
+        server.listen(0, '127.0.0.1', function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({log: '*'}, internals.getUri(server), {
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -131,11 +133,11 @@ describe('_report()', function () {
                 expect(err).to.not.exist();
 
                 for (var i = 0; i < 10; ++i) {
-                   ee.emit('report', 'log', {
-                       id: i,
-                       value: 'this is data for item ' + 1,
-                       event: 'log'
-                   });
+                    ee.emit('report', 'log', {
+                        id: i,
+                        value: 'this is data for item ' + 1,
+                        event: 'log'
+                    });
                 }
             });
         });
@@ -145,25 +147,34 @@ describe('_report()', function () {
 
         var hitCount = 0;
         var ee = new EventEmitter();
-        var server = internals.makeServer(function (request, reply) {
+        var server = Http.createServer(function (req, res) {
 
-            hitCount++;
-            var payload = request.payload;
+            var data = '';
+            req.on('data', function (chunk) {
 
-            expect(payload.events).to.exist();
-            expect(payload.events.log).to.exist();
-            expect(payload.events.log.length).to.equal(1);
-            expect(payload.events.log[0].id).to.equal(hitCount - 1);
+                data += chunk;
+            });
+            req.on('end', function () {
 
-            if (hitCount === 10) {
-                done();
-            }
-            reply();
+                hitCount++;
+                var payload = JSON.parse(data);
+
+                expect(payload.events).to.exist();
+                expect(payload.events.log).to.exist();
+                expect(payload.events.log.length).to.equal(1);
+                expect(payload.events.log[0].id).to.equal(hitCount - 1);
+
+                res.writeHead(200);
+                res.end();
+                if (hitCount === 10) {
+                    server.close(done);
+                }
+            });
         });
 
-        server.start(function () {
+        server.listen(0, '127.0.01', function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({log: '*'}, internals.getUri(server), {
                 threshold: 0
             });
 
@@ -182,42 +193,54 @@ describe('_report()', function () {
         });
     });
 
-    it('sends the events in an envelop grouped by type and ordered by timestamp', function(done) {
+    it('sends the events in an envelop grouped by type and ordered by timestamp', function (done) {
 
         var hitCount = 0;
         var ee = new EventEmitter();
-        var server = internals.makeServer(function (request, reply) {
+        var server = Http.createServer(function (req, res) {
 
             hitCount++;
-            var payload = request.payload;
-            var events = payload.events;
+            var data = '';
 
-            expect(request.headers['x-api-key']).to.equal('12345');
-            expect(payload.schema).to.equal('good-http');
+            req.on('data', function (chunk) {
 
-            expect(events.log).to.exist();
-            expect(events.request).to.exist();
+                data += chunk;
+            });
 
-            expect(internals.isSorted(events.log)).to.equal(true);
-            expect(internals.isSorted(events.request)).to.equal(true);
+            req.on('end', function () {
 
-            if (hitCount === 1) {
-                expect(events.log.length).to.equal(3);
-                expect(events.request.length).to.equal(2);
-            }
-            else if (hitCount === 2) {
-                expect(events.log.length).to.equal(2);
-                expect(events.request.length).to.equal(3);
-                done();
-            }
+                var payload = JSON.parse(data);
+                var events = payload.events;
+
+                expect(req.headers['x-api-key']).to.equal('12345');
+                expect(payload.schema).to.equal('good-http');
+
+                expect(events.log).to.exist();
+                expect(events.request).to.exist();
+
+                expect(internals.isSorted(events.log)).to.equal(true);
+                expect(internals.isSorted(events.request)).to.equal(true);
+
+                if (hitCount === 1) {
+                    expect(events.log.length).to.equal(3);
+                    expect(events.request.length).to.equal(2);
+                    res.end();
+                }
+                else if (hitCount === 2) {
+                    expect(events.log.length).to.equal(2);
+                    expect(events.request.length).to.equal(3);
+                    res.end();
+                    server.close(done);
+                }
+            });
         });
 
-        server.start(function () {
+        server.listen(0, '127.0.0.1', function () {
 
-            var reporter = new GoodHttp(server.info.uri, {
+            var reporter = new GoodHttp({
                 log: '*',
                 request: '*'
-            }, {
+            }, internals.getUri(server), {
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -249,24 +272,36 @@ describe('_report()', function () {
 
         var hitCount = 0;
         var ee = new EventEmitter();
-        var server = internals.makeServer(function (request, reply) {
+        var server = Http.createServer(function (req, res) {
 
+            var data = '';
             hitCount++;
-            var events = request.payload.events;
 
-            expect(events).to.exist();
-            expect(events.log).to.exist();
-            expect(events.log.length).to.equal(5);
-            expect(events.log[0]._data).to.equal('[Circular ~.events.log.0]');
+            req.on('data', function (chunk) {
 
+                data += chunk;
+            });
+            req.on('end', function () {
 
-            expect(hitCount).to.equal(1);
-            done();
+                var events = JSON.parse(data);
+                events = events.events;
+
+                expect(events).to.exist();
+                expect(events.log).to.exist();
+                expect(events.log.length).to.equal(5);
+                expect(events.log[0]._data).to.equal('[Circular ~.events.log.0]');
+
+                expect(hitCount).to.equal(1);
+
+                res.end();
+
+                server.close(done);
+            });
         });
 
-        server.start(function () {
+        server.listen(0, '127.0.0.1', function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({log: '*'}, internals.getUri(server), {
                 threshold: 5
             });
 
@@ -297,22 +332,31 @@ describe('stop()', function () {
 
         var hitCount = 0;
         var ee = new EventEmitter();
-        var server = internals.makeServer(function (request, reply) {
+        var server = Http.createServer(function (req, res) {
 
+            var data = '';
             hitCount++;
-            var payload = request.payload;
-            var events = payload.events;
 
-            expect(events.log).to.exist();
-            expect(events.log.length).to.equal(2);
+            req.on('data', function (chunk) {
 
-            reply();
-            done();
+                data += chunk;
+            });
+            req.on('end', function () {
+
+                var payload = JSON.parse(data);
+                var events = payload.events;
+
+                expect(events.log).to.exist();
+                expect(events.log.length).to.equal(2);
+
+                res.end();
+                server.close(done);
+            });
         });
 
-        server.start(function () {
+        server.listen(0, '127.0.0.1', function () {
 
-            var reporter = new GoodHttp(server.info.uri, { log: '*' }, {
+            var reporter = new GoodHttp({ log: '*' }, internals.getUri(server), {
                 threshold: 3,
                 wreck: {
                     headers: {
@@ -335,9 +379,9 @@ describe('stop()', function () {
                     timestamp: Date.now(),
                     id: 2
                 });
-            });
 
-            reporter.stop();
+                reporter.stop();
+            });
         });
     });
 });
