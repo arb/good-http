@@ -1,11 +1,13 @@
 // Load modules
 
 var EventEmitter = require('events').EventEmitter;
+var Stream = require('stream');
 var Http = require('http');
 var Code = require('code');
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var GoodHttp = require('..');
+var Hoek = require('hoek');
 
 // Declare internals
 
@@ -33,6 +35,18 @@ internals.getUri = function (server) {
     return 'http://' + address.address + ':' + address.port;
 };
 
+internals.readStream = function (done) {
+
+    var result = new Stream.Readable({ objectMode: true });
+    result._read = Hoek.ignore;
+
+    if (typeof done === 'function') {
+        result.once('end', done);
+    }
+
+    return result;
+};
+
 // Test shortcuts
 
 var describe = lab.describe;
@@ -40,48 +54,52 @@ var it = lab.it;
 var expect = Code.expect;
 
 
+describe('GoodHttp', function () {
 
-it('throws an error without using new', function(done) {
+    it('allows creation without using new', function (done) {
 
-    expect(function () {
+        var reporter = GoodHttp({ log: '*' }, '');
+        expect(reporter).to.exist();
+        done();
+    });
 
-        var reporter = GoodHttp(null, 'www.github.com');
-    }).to.throw('GoodHttp must be created with new');
+    it('allows creation using new', function (done) {
 
-    done();
-});
+        var reporter = new GoodHttp({ log: '*' }, '');
+        expect(reporter).to.exist();
+        done();
+    });
 
-it('throws an error if missing endpoint', function (done) {
+    it('throws an error if missing endpoint', function (done) {
 
-    expect(function () {
+        expect(function () {
 
-        var reporter = new GoodHttp(null);
-    }).to.throw('endpoint must be a string');
+            var reporter = GoodHttp(null);
+        }).to.throw('endpoint must be a string');
 
-    done();
-});
+        done();
+    });
 
-it('does not throw an error with missing options', function (done) {
+    it('does not throw an error with missing options', function (done) {
 
-    var reporter = new GoodHttp(null, 'www.github.com');
-    expect(reporter).to.exist();
+        var reporter = GoodHttp({ log: '*' }, 'www.github.com');
+        expect(reporter).to.exist();
 
-    done();
-});
+        done();
+    });
 
-it('does not report if the event que is empty', function (done) {
+    it('does not report if the event que is empty', function (done) {
 
-    var reporter = new GoodHttp({ log: '*'}, 'http://localhost:31337', { threshold: 5 });
+        var reporter = GoodHttp({ log: '*'}, 'http://localhost:31337', { threshold: 5 });
 
-    var result = reporter._sendMessages();
-    expect(result).to.not.exist();
-    done();
-});
-
-describe('_report()', function () {
+        var result = reporter._sendMessages();
+        expect(result).to.not.exist();
+        done();
+    });
 
     it('honors the threshold setting and sends the events in a batch', function (done) {
 
+        var stream = internals.readStream();
         var hitCount = 0;
         var ee = new EventEmitter();
         var server = Http.createServer(function (req, res) {
@@ -119,7 +137,7 @@ describe('_report()', function () {
 
         server.listen(0, '127.0.0.1', function () {
 
-            var reporter = new GoodHttp({log: '*'}, internals.getUri(server), {
+            var reporter = GoodHttp({ log: '*' }, internals.getUri(server), {
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -128,12 +146,12 @@ describe('_report()', function () {
                 }
             });
 
-            reporter.start(ee, function (err) {
+            reporter.init(stream, ee, function (err) {
 
                 expect(err).to.not.exist();
 
                 for (var i = 0; i < 10; ++i) {
-                    ee.emit('report', 'log', {
+                    stream.push({
                         id: i,
                         value: 'this is data for item ' + 1,
                         event: 'log'
@@ -145,6 +163,7 @@ describe('_report()', function () {
 
     it('sends each event individually if threshold is 0', function (done) {
 
+        var stream = internals.readStream();
         var hitCount = 0;
         var ee = new EventEmitter();
         var server = Http.createServer(function (req, res) {
@@ -174,16 +193,17 @@ describe('_report()', function () {
 
         server.listen(0, '127.0.01', function () {
 
-            var reporter = new GoodHttp({log: '*'}, internals.getUri(server), {
+            var reporter = new GoodHttp({ log: '*' }, internals.getUri(server), {
                 threshold: 0
             });
 
-            reporter.start(ee, function (err) {
+            reporter.init(stream, ee, function (err) {
 
                 expect(err).to.not.exist();
 
                 for (var i = 0; i < 10; ++i) {
-                    ee.emit('report', 'log', {
+
+                    stream.push({
                         id: i,
                         value: 'this is data for item ' + 1,
                         event: 'log'
@@ -195,6 +215,7 @@ describe('_report()', function () {
 
     it('sends the events in an envelop grouped by type and ordered by timestamp', function (done) {
 
+        var stream = internals.readStream();
         var hitCount = 0;
         var ee = new EventEmitter();
         var server = Http.createServer(function (req, res) {
@@ -249,7 +270,7 @@ describe('_report()', function () {
                 }
             });
 
-            reporter.start(ee, function (err) {
+            reporter.init(stream, ee, function (err) {
 
                 expect(err).to.not.exist();
 
@@ -257,7 +278,7 @@ describe('_report()', function () {
 
                     var eventType = i % 2 === 0 ? 'log' : 'request';
 
-                    ee.emit('report', eventType, {
+                    stream.push({
                         id: i,
                         value: 'this is data for item ' + 1,
                         timestamp: Math.floor(Date.now() + (Math.random() * 10000000000)),
@@ -270,6 +291,7 @@ describe('_report()', function () {
 
     it('handles circular object references correctly', function (done) {
 
+        var stream = internals.readStream();
         var hitCount = 0;
         var ee = new EventEmitter();
         var server = Http.createServer(function (req, res) {
@@ -305,7 +327,7 @@ describe('_report()', function () {
                 threshold: 5
             });
 
-            reporter.start(ee, function (err) {
+            reporter.init(stream, ee, function (err) {
 
                 expect(err).to.not.exist();
 
@@ -319,16 +341,13 @@ describe('_report()', function () {
 
                     data._data = data;
 
-                    ee.emit('report', 'log', data);
+                    stream.push(data);
                 }
             });
         });
     });
-});
 
-describe('stop()', function () {
-
-    it('makes a last attempt to send any remaining log entries', function (done) {
+    it('makes a last attempt to send any remaining log entries when the read stream ends', function (done) {
 
         var hitCount = 0;
         var ee = new EventEmitter();
@@ -356,6 +375,7 @@ describe('stop()', function () {
 
         server.listen(0, '127.0.0.1', function () {
 
+            var stream = internals.readStream();
             var reporter = new GoodHttp({ log: '*' }, internals.getUri(server), {
                 threshold: 3,
                 wreck: {
@@ -365,22 +385,21 @@ describe('stop()', function () {
                 }
             });
 
-            reporter.start(ee, function (err) {
+            reporter.init(stream, ee, function (err) {
 
                 expect(err).to.not.exist();
 
-                ee.emit('report', 'log', {
+                stream.push({
                     event: 'log',
                     timestamp: Date.now(),
                     id: 1
                 });
-                ee.emit('report', 'log', {
+                stream.push({
                     event: 'log',
                     timestamp: Date.now(),
                     id: 2
                 });
-
-                reporter.stop();
+                stream.push(null);
             });
         });
     });
