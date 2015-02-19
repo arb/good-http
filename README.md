@@ -24,7 +24,7 @@ Creates a new GoodHttp object where:
   - `[wreck]` - configuration object to pass into [`wreck`](https://github.com/hapijs/wreck#advanced). Defaults to `{ timeout: 60000, headers: {} }`. `content-type` is always "application/json".
 
 
-## Goodv Http Methods
+## Good Http Methods
 ### `goodhttp.init(stream, emitter, callback)`
 Initializes the reporter with the following arguments:
 
