@@ -23,6 +23,17 @@ Creates a new GoodHttp object where:
 	- `threshold` - number of events to hold before transmission. Defaults to `20`. Set to `0` to have every event start transmission instantly. It is strongly suggested to have a set threshold to make data transmission more efficient.
   - `[wreck]` - configuration object to pass into [`wreck`](https://github.com/hapijs/wreck#advanced). Defaults to `{ timeout: 60000, headers: {} }`. `content-type` is always "application/json".
 
+
+## Goodv Http Methods
+### `goodhttp.init(stream, emitter, callback)`
+Initializes the reporter with the following arguments:
+
+- `stream` - a Node readable stream that will be the source of data for this reporter. It is assumed that `stream` is in `objectMode`.
+- `emitter` - an event emitter object.
+- `callback` - a callback to execute when the start function has complete all the necessary set up steps and is ready to receive data.
+
+Then the `stream` emits an "end" event, `goodhttp` will transmit any events remaining it it's internal buffer to attempt to prevent data loss.
+
 ### Schema
 
 Each POST will match the following schema. Every event will be wrapped inside the `events` key and grouped by the event type and ordered by the timestamp. The payload that is POSTed to the `endpoint` has the following schema:
