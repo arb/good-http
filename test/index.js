@@ -58,14 +58,14 @@ describe('GoodHttp', function () {
 
     it('allows creation without using new', function (done) {
 
-        var reporter = GoodHttp({ log: '*' }, '');
+        var reporter = GoodHttp({ log: '*' }, { endpoint: true });
         expect(reporter).to.exist();
         done();
     });
 
     it('allows creation using new', function (done) {
 
-        var reporter = new GoodHttp({ log: '*' }, '');
+        var reporter = new GoodHttp({ log: '*' }, { endpoint: true });
         expect(reporter).to.exist();
         done();
     });
@@ -74,24 +74,14 @@ describe('GoodHttp', function () {
 
         expect(function () {
 
-            var reporter = GoodHttp(null);
-        }).to.throw('endpoint must be a string');
-
-        done();
-    });
-
-    it('does not throw an error with missing options', function (done) {
-
-        var reporter = GoodHttp({ log: '*' }, 'www.github.com');
-        expect(reporter).to.exist();
-
+            var reporter = GoodHttp(null, null);
+        }).to.throw('config.endpoint must be a string');
         done();
     });
 
     it('does not report if the event que is empty', function (done) {
 
-        var reporter = GoodHttp({ log: '*'}, 'http://localhost:31337', { threshold: 5 });
-
+        var reporter = GoodHttp({ log: '*'}, { endpoint: 'http://localhost:31337', threshold: 5 });
         var result = reporter._sendMessages();
         expect(result).to.not.exist();
         done();
@@ -137,7 +127,8 @@ describe('GoodHttp', function () {
 
         server.listen(0, '127.0.0.1', function () {
 
-            var reporter = GoodHttp({ log: '*' }, internals.getUri(server), {
+            var reporter = GoodHttp({ log: '*' }, {
+                endpoint: internals.getUri(server),
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -193,7 +184,8 @@ describe('GoodHttp', function () {
 
         server.listen(0, '127.0.01', function () {
 
-            var reporter = new GoodHttp({ log: '*' }, internals.getUri(server), {
+            var reporter = new GoodHttp({ log: '*' }, {
+                endpoint: internals.getUri(server),
                 threshold: 0
             });
 
@@ -261,7 +253,8 @@ describe('GoodHttp', function () {
             var reporter = new GoodHttp({
                 log: '*',
                 request: '*'
-            }, internals.getUri(server), {
+            }, {
+                endpoint: internals.getUri(server),
                 threshold: 5,
                 wreck: {
                     headers: {
@@ -323,7 +316,8 @@ describe('GoodHttp', function () {
 
         server.listen(0, '127.0.0.1', function () {
 
-            var reporter = new GoodHttp({log: '*'}, internals.getUri(server), {
+            var reporter = new GoodHttp({ log: '*' }, {
+                endpoint: internals.getUri(server),
                 threshold: 5
             });
 
@@ -376,7 +370,8 @@ describe('GoodHttp', function () {
         server.listen(0, '127.0.0.1', function () {
 
             var stream = internals.readStream();
-            var reporter = new GoodHttp({ log: '*' }, internals.getUri(server), {
+            var reporter = new GoodHttp({ log: '*' }, {
+                endpoint: internals.getUri(server),
                 threshold: 3,
                 wreck: {
                     headers: {
